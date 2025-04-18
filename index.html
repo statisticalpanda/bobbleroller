@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Custom Dice Roller</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+    input {
+      padding: 5px;
+      margin-right: 10px;
+    }
+    button {
+      padding: 5px 10px;
+    }
+    .highlight {
+      background-color: yellow;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Custom Dice Roller</h1>
+  <div>
+    <label>Number of D6:
+      <input type="number" id="numDice" value="6">
+    </label>
+    <label>Number of Attempts:
+      <input type="number" id="numAttempts" value="5">
+    </label>
+    <button onclick="rollDice()">Roll</button>
+  </div>
+  <div>
+    <h2>Results:</h2>
+    <ul id="results"></ul>
+  </div>
+  <div id="totalEvens" style="font-weight: bold; margin-top: 10px;"></div>
+
+  <script>
+    function rollDice() {
+      const numDice = parseInt(document.getElementById('numDice').value);
+      const numAttempts = parseInt(document.getElementById('numAttempts').value);
+      const resultsContainer = document.getElementById('results');
+      const totalEvensDisplay = document.getElementById('totalEvens');
+      resultsContainer.innerHTML = '';
+
+      let totalEvens = 0;
+
+      for (let i = 0; i < numAttempts; i++) {
+        const roll = Array.from({ length: numDice }, () => Math.ceil(Math.random() * 6));
+        const evens = roll.filter(n => n % 2 === 0).length;
+        const sixes = roll.filter(n => n === 6).length;
+        totalEvens += evens;
+
+        const li = document.createElement('li');
+        if (sixes === 7) {
+          li.classList.add('highlight');
+        }
+        li.innerHTML = `
+          <div>Attempt ${i + 1}: ${roll.join(', ')}</div>
+          <div>Evens: ${evens}</div>
+          <div>Sixes: ${sixes}</div>
+        `;
+        resultsContainer.appendChild(li);
+      }
+
+      totalEvensDisplay.textContent = `Total Even Rolls: ${totalEvens}`;
+    }
+  </script>
+</body>
+</html>
