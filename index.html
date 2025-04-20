@@ -3,82 +3,174 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Custom Dice Roller</title>
+  <title>Dice Roller</title>
   <style>
     body {
       font-family: sans-serif;
-      padding: 20px;
-      max-width: 800px;
+      padding: 1rem;
+      background: #f9f9f9;
+      max-width: 700px;
       margin: auto;
     }
-    input {
-      padding: 5px;
-      margin-right: 10px;
+    h1, h2 {
+      text-align: center;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    label {
+      display: flex;
+      flex-direction: column;
+      font-weight: bold;
+    }
+    input, button {
+      padding: 0.5rem;
+      font-size: 1rem;
     }
     button {
-      padding: 5px 10px;
+      background: #0077cc;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    .results, .history {
+      margin-top: 1rem;
+    }
+    .result-item {
+      background: white;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-left: 5px solid transparent;
+      border-radius: 5px;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeIn 0.3s forwards;
     }
     .highlight {
-      background-color: yellow;
+      background: #fff9c4;
+      border-left-color: gold;
     }
-    ul {
-      list-style: none;
-      padding: 0;
-    }
-    li {
-      margin: 10px 0;
+    .history-entry {
+      background: #eee;
+      margin-bottom: 10px;
       padding: 10px;
-      border: 1px solid #ccc;
       border-radius: 5px;
+    }
+    .expandable {
+      cursor: pointer;
+    }
+    .hidden {
+      display: none;
+    }
+    .noted {
+      color: red;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+        transform: none;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>Custom Dice Roller</h1>
-  <div>
-    <label>Number of D6:
-      <input type="number" id="numDice" value="6">
+  <h1>Dice Roller</h1>
+  <div class="controls">
+    <label>
+      Number of D6:
+      <input type="number" id="numDice" value="6" min="1">
     </label>
-    <label>Number of Attempts:
-      <input type="number" id="numAttempts" value="5">
+    <label>
+      Number of Attempts:
+      <input type="number" id="numAttempts" value="5" min="1">
     </label>
     <button onclick="rollDice()">Roll</button>
   </div>
-  <div>
-    <h2>Results:</h2>
-    <ul id="results"></ul>
+
+  <div class="results">
+    <h2>Results</h2>
+    <div id="results"></div>
+    <div id="totalEvens" class="total"></div>
   </div>
-  <div id="totalEvens" style="font-weight: bold; margin-top: 10px;"></div>
+
+  <div class="history">
+    <h2>Previous Rolls</h2>
+    <div id="history"></div>
+  </div>
 
   <script>
+    const resultsContainer = document.getElementById('results');
+    const historyContainer = document.getElementById('history');
+    const totalEvensDisplay = document.getElementById('totalEvens');
+
+    let previousSession = null;
+
     function rollDice() {
+      if (previousSession) {
+        appendToHistory(previousSession.results, previousSession.timestamp);
+      }
+
       const numDice = parseInt(document.getElementById('numDice').value);
       const numAttempts = parseInt(document.getElementById('numAttempts').value);
-      const resultsContainer = document.getElementById('results');
-      const totalEvensDisplay = document.getElementById('totalEvens');
+      let totalEvens = 0;
       resultsContainer.innerHTML = '';
 
-      let totalEvens = 0;
+      const sessionResults = [];
+      const timestamp = new Date().toLocaleString();
 
       for (let i = 0; i < numAttempts; i++) {
         const roll = Array.from({ length: numDice }, () => Math.ceil(Math.random() * 6));
         const evens = roll.filter(n => n % 2 === 0).length;
         const sixes = roll.filter(n => n === 6).length;
         totalEvens += evens;
+        sessionResults.push({ roll, evens, sixes });
 
-        const li = document.createElement('li');
-        if (sixes === 7) {
-          li.classList.add('highlight');
-        }
-        li.innerHTML = `
-          <div>Attempt ${i + 1}: ${roll.join(', ')}</div>
-          <div>Evens: ${evens}</div>
-          <div>Sixes: ${sixes}</div>
-        `;
-        resultsContainer.appendChild(li);
+        const div = document.createElement('div');
+        div.className = 'result-item' + (sixes === 7 ? ' highlight' : '');
+        div.innerHTML = `<strong>Attempt ${i + 1}</strong>: ${roll.join(', ')}<br>Evens: ${evens} | Sixes: ${sixes}`;
+        resultsContainer.appendChild(div);
       }
 
       totalEvensDisplay.textContent = `Total Even Rolls: ${totalEvens}`;
+      previousSession = { results: sessionResults, timestamp };
+    }
+
+    function appendToHistory(results, timestamp) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'history-entry';
+
+      const summary = document.createElement('div');
+      summary.className = 'expandable';
+
+      const containsSevenSixes = results.some(r => r.sixes === 7);
+      summary.textContent = `Roll at ${timestamp}`;
+      if (containsSevenSixes) {
+        const note = document.createElement('span');
+        note.className = 'noted';
+        note.textContent = '7x 6s';
+        summary.appendChild(note);
+      }
+
+      const detail = document.createElement('div');
+      detail.className = 'hidden';
+
+      results.forEach((result, index) => {
+        const line = document.createElement('div');
+        line.innerHTML = `<strong>Attempt ${index + 1}</strong>: ${result.roll.join(', ')} | Evens: ${result.evens} | Sixes: ${result.sixes}`;
+        detail.appendChild(line);
+      });
+
+      summary.onclick = () => detail.classList.toggle('hidden');
+
+      wrapper.appendChild(summary);
+      wrapper.appendChild(detail);
+      historyContainer.prepend(wrapper);
     }
   </script>
 </body>
